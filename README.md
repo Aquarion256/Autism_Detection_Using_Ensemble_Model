@@ -1,0 +1,2 @@
+# Autism_Detection_Using_Ensemble_Model
+Minor Project
