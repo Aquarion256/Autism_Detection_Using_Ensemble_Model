@@ -22,7 +22,6 @@ These interactions include:
   2. Get some help if they want to know more about autism.
   3. Add their data anonymously to the dataset that will then be used to train the model.
 
-#Running this project
 To run this project yourself, you will require the libraries used in the jupyter notebook (Sorry I do not want to go inside and recheck which ones are there or not there.
 Run the notebook first to obtain your model, which will be called 'ensemble_model.pkl' and then run the GUI. 
 
