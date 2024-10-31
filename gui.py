@@ -4,7 +4,7 @@ import pickle
 import pandas as pd
 import csv
 from collections import OrderedDict
-
+import webbrowser
 
 user_input = {
     'Social_Responsiveness_Scale': 6.0,
@@ -64,6 +64,8 @@ input_dict={'A1': 0, 'A2': 0, 'A3': 0, 'A4': 0, 'A5': 0, 'A6': 0, 'A7': 0, 'A8':
             'Family_mem_with_ASD': '', 
             'Who_completed_the_test': ''}
 
+def open_help_link():
+    webbrowser.open("https://www.autismspeaks.org/")
 
 def show_initial_form():
     # Clear current screen
@@ -149,11 +151,9 @@ def show_initial_form():
     ttk.Button(root, text="Next", command=next_screen).grid(row=15, column=1)
 
 def show_screen(screen_num):
-    # Clear current screen
     for widget in root.winfo_children():
         widget.destroy()
 
-    # Show the appropriate screen based on the screen_num
     questions = []
     if screen_num == 1:
         questions = screen_1_questions
@@ -166,18 +166,15 @@ def show_screen(screen_num):
 
     ttk.Label(root, text=f"Screen {screen_num}").grid(row=0, column=0, columnspan=2)
 
-    # Display the questions with radio buttons
     for i, question in enumerate(questions):
         ttk.Label(root, text=question).grid(row=i + 1, column=0, sticky=tk.W)
         tk.Radiobutton(root, text="Yes", variable=question_vars[i], value="Yes").grid(row=i + 1, column=1)
         tk.Radiobutton(root, text="No", variable=question_vars[i], value="No").grid(row=i + 1, column=2)
 
-    # Back and Submit buttons
     ttk.Button(root, text="Back", command=show_initial_form).grid(row=11, column=0)
     ttk.Button(root, text="Submit", command=submit_form).grid(row=11, column=2)
 
 def next_screen():
-    # Capture values from dropdowns and radio buttons
     input_dict['Age_Years'] = age_var.get()
     age=age_var.get()
     sex = sex_var.get()
@@ -199,7 +196,6 @@ def next_screen():
     input_dict['Jaundice'] = jaundice_var.get()
     input_dict['Family_mem_with_ASD'] = family_asd_var.get()
 
-    # Determine which screen to show based on age
     if 0 <= age <= 3:
         show_screen(1)
     elif 4 <= age <= 11:
@@ -211,84 +207,75 @@ def next_screen():
 
 
 def add_data_to_dataset(input_dict, prediction):
-    # Calculate the ASD traits based on the prediction
     asd_traits = 'Yes' if prediction[0] == 'Yes' else 'No'
     
-    # Open the CSV to find the last serial number
     try:
         with open('global_dataset.csv', mode='r') as file:
             reader = csv.DictReader(file)
             rows = list(reader)
             if rows:
-                last_serial_number = int(rows[-1]["CASE_NO_PATIENT'S"])  # Get the last serial number
+                last_serial_number = int(rows[-1]["CASE_NO_PATIENT'S"])  
             else:
-                last_serial_number = 0  # If the file is empty, start with 0
+                last_serial_number = 0  
     except FileNotFoundError:
-        last_serial_number = 0  # If the file doesn't exist yet, start with 0
+        last_serial_number = 0  
 
-    # Increment the serial number for the new entry
     new_serial_number = last_serial_number + 1
 
-    # Prepare the ordered dictionary with CASE_NO_PATIENT'S as the first column
     ordered_data = OrderedDict()
     ordered_data["CASE_NO_PATIENT'S"] = new_serial_number
-    ordered_data.update(input_dict)  # Add the main input dictionary data
-    ordered_data['ASD_traits'] = asd_traits  # Add the ASD traits as the last column
+    ordered_data.update(input_dict)  
+    ordered_data['ASD_traits'] = asd_traits  
 
-    # Open the CSV file in append mode
+    if 'Age_Years' in ordered_data:
+        age_index = list(ordered_data.keys()).index('Age_Years') + 1
+        items = list(ordered_data.items())
+        items.insert(age_index, ('Qchat_10_Score', 0))
+        ordered_data = OrderedDict(items)
+
     with open('global_dataset.csv', mode='a', newline='') as file:
         writer = csv.DictWriter(file, fieldnames=ordered_data.keys())
         
-        # Write header if the file is new
         if file.tell() == 0:
             writer.writeheader()
         
-        # Write the new data row
         writer.writerow(ordered_data)
         
-    # Notify user of successful addition
     ttk.Label(root, text="Data added successfully!", font=("Helvetica", 12)).grid(row=4, column=0, columnspan=2, pady=10)
 
 
+
 def show_results_screen(prediction):
-    # Clear current screen
     for widget in root.winfo_children():
         widget.destroy()
 
-    # Set window size (width x height)
-    root.geometry("500x400")  # You can adjust this if needed
+    root.geometry("500x400")  
+    root.grid_rowconfigure(0, weight=1)  
+    root.grid_rowconfigure(1, weight=1)  
+    root.grid_rowconfigure(2, weight=1) 
+    root.grid_rowconfigure(3, weight=1) 
+    root.grid_columnconfigure(0, weight=1)  
+    root.grid_columnconfigure(1, weight=1)  
 
-    # Configure rows and columns to expand dynamically
-    root.grid_rowconfigure(0, weight=1)  # First row (Label) will expand
-    root.grid_rowconfigure(1, weight=1)  # Second row (Result Text) will expand
-    root.grid_rowconfigure(2, weight=1)  # Third row (Buttons) will expand
-    root.grid_rowconfigure(3, weight=1)  #Fourth row (Buttons) will expand
-    root.grid_columnconfigure(0, weight=1)  # First column will expand
-    root.grid_columnconfigure(1, weight=1)  # Second column (for buttons) will expand
-
-    # Display the results based on the prediction
     if prediction[0] == 'Yes':
         result_text = "You are likely to have Autism."
     else:
         result_text = "You are unlikely to have Autism."
 
-    # Main label
+   
     ttk.Label(root, text="Results of Autism Detection Test: ", font=("Helvetica", 16)).grid(row=0, column=0, columnspan=2, pady=20, padx=10, sticky="nsew")
 
-    # Result text (resizes dynamically)
     ttk.Label(root, text=result_text, font=("Helvetica", 16)).grid(row=1, column=0, columnspan=2, pady=20, padx=10, sticky="nsew")
 
-    ttk.Button(root, text="Get More Help" ).grid(row=2, column=0, pady=20, padx=10, sticky="nsew")
+    ttk.Button(root, text="Get More Help", command=open_help_link).grid(row=2, column=0, pady=20, padx=10, sticky="nsew")
     ttk.Button(root, text="Add data to our dataset", command=lambda: add_data_to_dataset(input_dict, prediction)).grid(row=2, column=1, pady=20, padx=10, sticky="nsew")
 
-    # Button to go back to the initial form or exit (they will also expand)
     ttk.Button(root, text="Back", command=show_initial_form).grid(row=3, column=0, pady=20, padx=10, sticky="nsew")
     ttk.Button(root, text="Exit", command=root.quit).grid(row=3, column=1, pady=20, padx=10, sticky="nsew")
 
 
 
 def submit_form():
-    # Handle form submission logic for each screen
     for i, var in enumerate(question_vars):
         if(var.get() == "Yes"):
             temp = 1
@@ -305,7 +292,6 @@ def submit_form():
     input_df = pd.DataFrame([input_dict])
     input_df_encoded = pd.get_dummies(input_df)
 
-    # Assuming input_df_encoded is your DataFrame
     missing_cols = set(all_columns) - set(input_df_encoded.columns)
 
     for col in missing_cols:
@@ -315,14 +301,12 @@ def submit_form():
 
     prediction = loaded_model.predict(input_df_encoded)
 
-    # Show results screen with the prediction
     show_results_screen(prediction)
 
 
 root = tk.Tk()
 root.title("Autism Detection Form")
 
-# Sample questions for each screen (placeholders and will be replaced later)
 screen_1_questions = ["Does the child look at you when you call his/her name?", 
                       "Is it easy for you to get eye contact with your child?", 
                       "Does your child point to indicate that s/he wants something?", 
